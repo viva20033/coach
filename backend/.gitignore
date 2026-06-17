@@ -1,0 +1,6 @@
+GROQ_API_KEY=
+*.db
+__pycache__/
+.env
+.venv/
+venv/
