@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from typing import Any
 
@@ -11,6 +12,9 @@ from app.prompts.prompts import (
     build_client_prompt,
     build_evaluation_prompt,
 )
+
+
+logger = logging.getLogger("izo_coach.groq")
 
 
 class GroqService:

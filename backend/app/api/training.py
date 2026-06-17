@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,6 +15,8 @@ from app.schemas.schemas import (
     TrainingStartRequest,
 )
 from app.services.groq_service import groq_service
+
+logger = logging.getLogger("izo_coach.training")
 
 router = APIRouter(prefix="/api/training", tags=["training"])
 
@@ -110,6 +113,7 @@ async def send_message(
         )
     except Exception as e:
         db.rollback()
+        logger.exception("AI client response failed for session %s", session_id)
         raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
 
     assistant_msg = Message(session_id=session.id, role="assistant", content=ai_response)

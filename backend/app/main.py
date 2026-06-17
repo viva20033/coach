@@ -1,3 +1,5 @@
+import logging
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -7,6 +9,9 @@ from app.api import admin, auth, exam, history, scenarios, training
 from app.config import settings
 from app.db.database import Scenario, User, init_db
 from app.db.seed import SEED_SCENARIOS
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("izo_coach")
 
 
 def seed_database():
