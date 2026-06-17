@@ -1,0 +1,16 @@
+[Unit]
+Description=IZO Coach API (FastAPI)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/izo-coach/backend
+EnvironmentFile=/opt/izo-coach/backend/.env
+ExecStart=/opt/izo-coach/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

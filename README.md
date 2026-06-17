@@ -47,6 +47,41 @@ npm run dev
 
 Откройте http://localhost:5173
 
+### Демо по IP (показать руководству в офисе)
+
+Компьютер и телефоны должны быть в **одной Wi-Fi сети**.
+
+**Вариант 1 — один клик:**
+
+```powershell
+.\start-demo.bat
+```
+
+Скрипт покажет адрес вида `http://192.168.1.5:5173` — откройте его с любого устройства в сети.
+
+**Вариант 2 — вручную (два терминала):**
+
+```powershell
+# Терминал 1 — backend
+cd backend
+.venv\Scripts\uvicorn app.main:app --port 8000
+
+# Терминал 2 — frontend (слушает все интерфейсы)
+cd frontend
+npm run dev
+```
+
+Vite выведет строку **Network:** `http://192.168.x.x:5173` — это и есть ссылка для коллег.
+
+**Если не открывается** — разрешите входящие подключения в брандмауэре Windows:
+
+```powershell
+New-NetFirewallRule -DisplayName "IZO Coach Frontend" -Direction Inbound -Port 5173 -Protocol TCP -Action Allow
+New-NetFirewallRule -DisplayName "IZO Coach Backend" -Direction Inbound -Port 8000 -Protocol TCP -Action Allow
+```
+
+> Backend снаружи не нужен — API проксируется через frontend (`/api` → `localhost:8000`).
+
 ### 3. Вход (dev-режим)
 
 На экране входа укажите имя и роль:

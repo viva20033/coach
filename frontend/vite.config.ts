@@ -37,6 +37,17 @@ export default defineConfig({
     }),
   ],
   server: {
+    host: true, // accessible via LAN IP, e.g. http://192.168.1.5:5173
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+    },
+  },
+  preview: {
+    host: true,
     port: 5173,
     proxy: {
       '/api': {
