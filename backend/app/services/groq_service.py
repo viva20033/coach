@@ -22,6 +22,7 @@ class GroqService:
     self.api_key = settings.groq_api_key
     self.model = settings.groq_model
     self.base_url = "https://api.groq.com/openai/v1"
+    self.proxy = settings.groq_http_proxy or None
 
   async def _chat(
     self,
@@ -32,12 +33,13 @@ class GroqService:
     if not self.api_key:
       raise ValueError("GROQ_API_KEY is not configured")
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=60.0, proxy=self.proxy) as client:
       response = await client.post(
         f"{self.base_url}/chat/completions",
         headers={
           "Authorization": f"Bearer {self.api_key}",
           "Content-Type": "application/json",
+          "User-Agent": "IZO-Coach/1.0",
         },
         json={
           "model": self.model,

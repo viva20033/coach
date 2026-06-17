@@ -20,18 +20,45 @@ if [[ -z "${GROQ_API_KEY:-}" ]] || [[ "$GROQ_API_KEY" == "your_groq_api_key_here
 fi
 
 MODEL="${GROQ_MODEL:-llama-3.3-70b-versatile}"
+PROXY_ARGS=()
+if [[ -n "${GROQ_HTTP_PROXY:-}" ]]; then
+  PROXY_ARGS=(--proxy "$GROQ_HTTP_PROXY")
+  echo "Using proxy: $GROQ_HTTP_PROXY"
+fi
 
-echo "==> Testing connectivity to api.groq.com..."
-curl -sS -o /dev/null -w "HTTP %{http_code}\n" --max-time 10 https://api.groq.com/openai/v1/models \
-  -H "Authorization: Bearer $GROQ_API_KEY" || echo "FAILED: cannot reach Groq"
+echo "==> Server public IP (for comparison with your PC):"
+curl -4 -s --max-time 5 https://ifconfig.me || echo "(could not detect)"
+echo ""
+
+echo "==> Testing connectivity to api.groq.com (IPv4)..."
+HTTP_CODE=$(curl -4 -sS -o /tmp/groq-test-body.txt -w "%{http_code}" --max-time 15 \
+  "${PROXY_ARGS[@]}" \
+  https://api.groq.com/openai/v1/models \
+  -H "Authorization: Bearer $GROQ_API_KEY" \
+  -H "User-Agent: IZO-Coach/1.0") || HTTP_CODE="000"
+echo "HTTP $HTTP_CODE"
+head -c 300 /tmp/groq-test-body.txt
+echo ""
+
+if [[ "$HTTP_CODE" == "403" ]]; then
+  echo ""
+  echo "!!! 403 Forbidden — Groq/Cloudflare blocks requests from this server's IP."
+  echo "    This is NOT a wrong API key (that would be 401)."
+  echo "    Fix: route traffic through a proxy (VPN, SOCKS5, HTTP proxy)."
+  echo "    Add to $ENV_FILE:"
+  echo "      GROQ_HTTP_PROXY=socks5://HOST:PORT"
+  echo "    Then: systemctl restart izo-coach"
+fi
 
 echo ""
 echo "==> Testing chat completion (model: $MODEL)..."
-curl -sS --max-time 60 https://api.groq.com/openai/v1/chat/completions \
+curl -4 -sS --max-time 60 "${PROXY_ARGS[@]}" \
+  https://api.groq.com/openai/v1/chat/completions \
   -H "Authorization: Bearer $GROQ_API_KEY" \
   -H "Content-Type: application/json" \
+  -H "User-Agent: IZO-Coach/1.0" \
   -d "{\"model\":\"$MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"Привет\"}],\"max_tokens\":20}"
 
 echo ""
 echo ""
-echo "Done. If you see 401 — wrong API key. 429 — rate limit. 404 — wrong model name."
+echo "Done. 401 = bad key | 403 = IP blocked | 429 = rate limit"

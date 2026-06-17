@@ -83,4 +83,5 @@ def health():
         "status": "ok",
         "groq_configured": groq_ok,
         "groq_model": settings.groq_model,
+        "groq_proxy": bool(settings.groq_http_proxy),
     }
