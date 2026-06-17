@@ -42,7 +42,9 @@ class GroqService:
           "max_tokens": max_tokens,
         },
       )
-      response.raise_for_status()
+      if response.status_code >= 400:
+        body = response.text[:500]
+        raise ValueError(f"Groq API {response.status_code}: {body}")
       data = response.json()
       return data["choices"][0]["message"]["content"].strip()
 

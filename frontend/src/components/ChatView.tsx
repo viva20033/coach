@@ -9,6 +9,7 @@ interface Props {
   loading?: boolean;
   sending?: boolean;
   showHint?: boolean;
+  error?: string;
 }
 
 export default function ChatView({
@@ -18,6 +19,7 @@ export default function ChatView({
   loading,
   sending,
   showHint = true,
+  error,
 }: Props) {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -77,6 +79,11 @@ export default function ChatView({
       </div>
 
       <div className="border-t border-slate-100 bg-white px-4 py-3 safe-bottom">
+        {error && (
+          <div className="mb-2 text-sm text-danger bg-red-50 rounded-button px-3 py-2">
+            {error}
+          </div>
+        )}
         <div className="flex gap-2 items-end">
           <textarea
             value={input}

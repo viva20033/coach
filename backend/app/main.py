@@ -44,9 +44,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="IZO Coach API", version="1.0.0", lifespan=lifespan)
 
 if settings.dev_mode:
-    # Allow access from LAN IPs during demo (e.g. http://192.168.x.x:5173)
+    # LAN demo + explicit production origins from CORS_ORIGINS
     app.add_middleware(
         CORSMiddleware,
+        allow_origins=settings.cors_origins_list,
         allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?",
         allow_credentials=True,
         allow_methods=["*"],
@@ -71,4 +72,10 @@ app.include_router(admin.router)
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    key = settings.groq_api_key
+    groq_ok = bool(key and key not in ("", "your_groq_api_key_here"))
+    return {
+        "status": "ok",
+        "groq_configured": groq_ok,
+        "groq_model": settings.groq_model,
+    }

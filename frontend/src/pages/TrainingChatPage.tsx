@@ -36,6 +36,7 @@ export default function TrainingChatPage() {
   const handleSend = async (content: string) => {
     if (!session) return;
     setSending(true);
+    setError('');
     try {
       const updated = await api.sendTrainingMessage(session.id, content);
       setSession(updated);
@@ -99,6 +100,7 @@ export default function TrainingChatPage() {
           onSend={handleSend}
           onFinish={handleFinish}
           sending={sending}
+          error={error}
         />
       )}
     </div>

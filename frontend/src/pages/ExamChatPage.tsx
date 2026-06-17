@@ -39,6 +39,7 @@ export default function ExamChatPage() {
   const handleSend = async (content: string) => {
     if (!session) return;
     setSending(true);
+    setError('');
     try {
       const updated = await api.sendExamMessage(Number(examId), session.id, content);
       setSession(updated);
@@ -106,6 +107,7 @@ export default function ExamChatPage() {
           onFinish={handleFinish}
           sending={sending}
           showHint={false}
+          error={error}
         />
       )}
     </div>

@@ -46,9 +46,56 @@ systemctl restart izo-coach
 
 ## HTTPS
 
+**Если SSL на Nginx Proxy Manager** — certbot на контейнере **не нужен** (см. раздел NPM ниже).
+
+Иначе на контейнере напрямую:
+
 ```bash
 certbot --nginx -d trainer.izostudia.net
 ```
+
+---
+
+## Nginx Proxy Manager (NPM)
+
+Схема: `Интернет → NPM (SSL) → LXC :80 (nginx) → /api → uvicorn`
+
+### Proxy Host в NPM
+
+| Поле | Значение |
+|------|----------|
+| Domain Names | `trainer.izostudia.net` |
+| Scheme | **http** |
+| Forward Hostname / IP | IP LXC, напр. `192.168.1.50` |
+| Forward Port | **80** (не 443, не 8000, не 5173) |
+| Block Common Exploits | выкл., если 502 |
+| Websockets Support | вкл. |
+
+SSL — только во вкладке **SSL** в NPM (Let's Encrypt).
+
+### Advanced в NPM
+
+```nginx
+proxy_set_header Host $host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_read_timeout 300s;
+```
+
+### Проверка (с машины где стоит NPM)
+
+```bash
+curl -I http://IP_LXC
+curl http://IP_LXC/api/health
+```
+
+### Частые причины 502
+
+1. В NPM указан порт **443** или **8000** вместо **80**
+2. Неверный IP контейнера
+3. `ufw` на LXC блокирует NPM — `ufw allow from IP_NPM to any port 80 proto tcp`
+4. `systemctl status nginx` и `systemctl status izo-coach` не active
 
 ---
 
