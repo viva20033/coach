@@ -135,11 +135,18 @@ export interface AdminResultItem {
   user_name: string;
   scenario_id: number;
   scenario_title: string;
+  scenario_difficulty: string;
+  scenario_category: string;
   type: string;
   score: number | null;
   status: string;
   created_at: string;
   completed_at: string | null;
+  result_json: EvaluationResult | null;
+}
+
+export interface AdminResultDetail extends AdminResultItem {
+  messages: Message[];
 }
 
 export const DIFFICULTY_LABELS: Record<Difficulty, string> = {

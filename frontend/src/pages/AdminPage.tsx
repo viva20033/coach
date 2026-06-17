@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../api/client';
-import type { AdminUser, Scenario, AdminResultItem } from '../types';
+import type { AdminUser, Scenario } from '../types';
 import Loading from '../components/Loading';
 import ErrorState from '../components/ErrorState';
-import { ArrowLeft, Users, FileText, BarChart3, Download, Plus, Trash2 } from 'lucide-react';
+import AdminResultsPanel from '../components/AdminResultsPanel';
+import { ArrowLeft, Users, FileText, BarChart3, Plus, Trash2 } from 'lucide-react';
 
 type Tab = 'users' | 'scenarios' | 'results';
 
@@ -15,8 +16,6 @@ export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('users');
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
-  const [results, setResults] = useState<AdminResultItem[]>([]);
-  const [avgScore, setAvgScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -33,9 +32,9 @@ export default function AdminPage() {
       if (tab === 'users') setUsers(await api.getAdminUsers());
       if (tab === 'scenarios') setScenarios(await api.getAdminScenarios());
       if (tab === 'results') {
-        const res = await api.getAdminResults();
-        setResults(res.items);
-        setAvgScore(res.average_score);
+        const [u, s] = await Promise.all([api.getAdminUsers(), api.getAdminScenarios()]);
+        setUsers(u);
+        setScenarios(s);
       }
     } catch (e) {
       setError((e as Error).message);
@@ -62,16 +61,6 @@ export default function AdminPage() {
   const toggleActive = async (s: Scenario) => {
     await api.updateScenario(s.id, { is_active: !s.is_active });
     load();
-  };
-
-  const exportCsv = async () => {
-    const csv = await api.exportResultsCsv();
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'results.csv';
-    a.click();
   };
 
   const tabs = [
@@ -104,8 +93,8 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {loading && <Loading />}
-      {error && <ErrorState message={error} onRetry={load} />}
+      {loading && tab !== 'results' && <Loading />}
+      {error && tab !== 'results' && <ErrorState message={error} onRetry={load} />}
 
       {!loading && !error && tab === 'users' && (
         <div className="space-y-3">
@@ -169,32 +158,9 @@ export default function AdminPage() {
         </div>
       )}
 
-      {!loading && !error && tab === 'results' && (
-        <div>
-          <div className="card mb-4 flex justify-between items-center">
-            <div>
-              <p className="text-sm text-slate-500">Средний балл</p>
-              <p className="text-2xl font-bold">{avgScore ?? '—'}</p>
-            </div>
-            <button onClick={exportCsv} className="btn-secondary text-sm py-2 px-4 flex items-center gap-1">
-              <Download className="w-4 h-4" /> CSV
-            </button>
-          </div>
-          <div className="space-y-2">
-            {results.map((r) => (
-              <div key={r.session_id} className="card !p-3">
-                <div className="flex justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{r.user_name}</p>
-                    <p className="text-xs text-slate-500">{r.scenario_title}</p>
-                  </div>
-                  <span className="font-bold text-primary">{r.score ?? '—'}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {tab === 'results' && (loading ? <Loading /> : !error && (
+        <AdminResultsPanel users={users} scenarios={scenarios} />
+      ))}
     </div>
   );
 }

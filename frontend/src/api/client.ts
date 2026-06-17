@@ -136,6 +136,9 @@ export const api = {
     );
   },
 
+  getAdminResultDetail: (sessionId: number) =>
+    request<import('../types').AdminResultDetail>(`/admin/results/${sessionId}`),
+
   exportResultsCsv: async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     const userId = getUserId();

@@ -205,11 +205,18 @@ class AdminResultItem(BaseModel):
     user_name: str
     scenario_id: int
     scenario_title: str
+    scenario_difficulty: str
+    scenario_category: str
     type: str
     score: float | None
     status: str
     created_at: datetime
     completed_at: datetime | None
+    result_json: dict[str, Any] | None = None
+
+
+class AdminResultDetailResponse(AdminResultItem):
+    messages: list[MessageResponse] = []
 
 
 class AdminResultsResponse(BaseModel):

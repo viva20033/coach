@@ -9,10 +9,12 @@ from sqlalchemy.orm import Session, joinedload
 from app.api.deps import parse_result_json, require_admin, user_stats
 from app.db.database import Scenario, Session as TrainingSession, User, get_db
 from app.schemas.schemas import (
+    AdminResultDetailResponse,
     AdminResultItem,
     AdminResultsResponse,
     AdminUserResponse,
     AdminUserUpdate,
+    MessageResponse,
     ScenarioCreate,
     ScenarioDetailResponse,
     ScenarioResponse,
@@ -159,11 +161,14 @@ def get_results(
             user_name=s.user.name if s.user else "",
             scenario_id=s.scenario_id,
             scenario_title=s.scenario.title if s.scenario else "",
+            scenario_difficulty=s.scenario.difficulty if s.scenario else "",
+            scenario_category=s.scenario.category if s.scenario else "",
             type=s.type,
             score=s.score,
             status=s.status,
             created_at=s.created_at,
             completed_at=s.completed_at,
+            result_json=parse_result_json(s.result_json),
         )
         for s in sessions
     ]
@@ -172,6 +177,43 @@ def get_results(
         items=items,
         average_score=round(sum(scores) / len(scores), 1) if scores else None,
         total=len(items),
+    )
+
+
+@router.get("/results/{session_id}", response_model=AdminResultDetailResponse)
+def get_result_detail(
+    session_id: int,
+    admin=Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    session = (
+        db.query(TrainingSession)
+        .options(
+            joinedload(TrainingSession.user),
+            joinedload(TrainingSession.scenario),
+            joinedload(TrainingSession.messages),
+        )
+        .filter(TrainingSession.id == session_id)
+        .first()
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return AdminResultDetailResponse(
+        session_id=session.id,
+        user_id=session.user_id,
+        user_name=session.user.name if session.user else "",
+        scenario_id=session.scenario_id,
+        scenario_title=session.scenario.title if session.scenario else "",
+        scenario_difficulty=session.scenario.difficulty if session.scenario else "",
+        scenario_category=session.scenario.category if session.scenario else "",
+        type=session.type,
+        score=session.score,
+        status=session.status,
+        created_at=session.created_at,
+        completed_at=session.completed_at,
+        result_json=parse_result_json(session.result_json),
+        messages=[MessageResponse.model_validate(m) for m in session.messages],
     )
 
 
@@ -197,7 +239,9 @@ def export_results_csv(
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
-        "session_id", "user_name", "scenario", "type", "score", "status", "created_at", "verdict"
+        "session_id", "user_name", "scenario", "category", "difficulty",
+        "type", "score", "status", "created_at", "verdict",
+        "strengths", "mistakes", "recommendations",
     ])
     for s in sessions:
         result = parse_result_json(s.result_json) or {}
@@ -205,11 +249,16 @@ def export_results_csv(
             s.id,
             s.user.name if s.user else "",
             s.scenario.title if s.scenario else "",
+            s.scenario.category if s.scenario else "",
+            s.scenario.difficulty if s.scenario else "",
             s.type,
             s.score,
             s.status,
             s.created_at.isoformat() if s.created_at else "",
             result.get("verdict", ""),
+            "; ".join(result.get("strengths", [])),
+            "; ".join(result.get("mistakes", [])),
+            "; ".join(result.get("recommendations", [])),
         ])
 
     output.seek(0)
